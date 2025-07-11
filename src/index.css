@@ -1,0 +1,265 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 20 14% 4%;
+  --muted: 60 5% 96%;
+  --muted-foreground: 25 5% 45%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14% 4%;
+  --border: 20 6% 90%;
+  --input: 20 6% 90%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 64 7% 92%;
+  --secondary-foreground: 24 10% 10%;
+  --accent: 60 5% 96%;
+  --accent-foreground: 24 10% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 60 9% 98%;
+  --ring: 20 14% 4%;
+  --radius: 0.5rem;
+
+  /* Custom neutral colors matching design */
+  --neutral-50: 248 250% 98%; /* #F8FAFC */
+  --neutral-100: 241 245% 97%; /* #F1F5F9 */
+  --neutral-200: 226 232% 88%; /* #E2E8F0 */
+  --neutral-300: 203 213% 85%; /* #CBD5E1 */
+  --neutral-400: 212 163% 72%; /* #94A3B8 */
+  --neutral-500: 215 147% 65%; /* #64748B */
+  --neutral-600: 215 156% 42%; /* #475569 */
+  --neutral-700: 215 155% 33%; /* #334155 */
+  --neutral-800: 217 293% 18%; /* #1E293B */
+  --neutral-900: 222 172% 9%; /* #0F172A */
+}
+
+.dark {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
+  --muted: 240 4% 16%;
+  --muted-foreground: 240 5% 65%;
+  --popover: 240 10% 4%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 4%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 4% 16%;
+  --input: 240 4% 16%;
+  --primary: 207 90% 54%;
+  --primary-foreground: 211 100% 99%;
+  --secondary: 240 4% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 4% 16%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 5% 84%;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    font-family: "Inter", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Custom utility classes */
+.font-inter {
+  font-family: "Inter", sans-serif;
+}
+
+@layer utilities {
+  /* Background utilities */
+  .bg-background {
+    background-color: hsl(var(--background));
+  }
+  .bg-muted {
+    background-color: hsl(var(--muted));
+  }
+  .bg-popover {
+    background-color: hsl(var(--popover));
+  }
+  .bg-card {
+    background-color: hsl(var(--card));
+  }
+  .bg-primary {
+    background-color: hsl(var(--primary));
+  }
+  .bg-secondary {
+    background-color: hsl(var(--secondary));
+  }
+  .bg-accent {
+    background-color: hsl(var(--accent));
+  }
+  .bg-destructive {
+    background-color: hsl(var(--destructive));
+  }
+
+  /* Text utilities */
+  .text-foreground {
+    color: hsl(var(--foreground));
+  }
+  .text-muted {
+    color: hsl(var(--muted-foreground));
+  }
+  .text-popover {
+    color: hsl(var(--popover-foreground));
+  }
+  .text-card {
+    color: hsl(var(--card-foreground));
+  }
+  .text-primary {
+    color: hsl(var(--primary));
+  }
+  .text-secondary {
+    color: hsl(var(--secondary-foreground));
+  }
+  .text-accent {
+    color: hsl(var(--accent-foreground));
+  }
+  .text-destructive {
+    color: hsl(var(--destructive-foreground));
+  }
+
+  /* Neutral color utilities */
+  .bg-neutral-50 {
+    background-color: hsl(var(--neutral-50));
+  }
+  .bg-neutral-100 {
+    background-color: hsl(var(--neutral-100));
+  }
+  .bg-neutral-200 {
+    background-color: hsl(var(--neutral-200));
+  }
+  .bg-neutral-300 {
+    background-color: hsl(var(--neutral-300));
+  }
+  .bg-neutral-400 {
+    background-color: hsl(var(--neutral-400));
+  }
+  .bg-neutral-500 {
+    background-color: hsl(var(--neutral-500));
+  }
+  .bg-neutral-600 {
+    background-color: hsl(var(--neutral-600));
+  }
+  .bg-neutral-700 {
+    background-color: hsl(var(--neutral-700));
+  }
+  .bg-neutral-800 {
+    background-color: hsl(var(--neutral-800));
+  }
+  .bg-neutral-900 {
+    background-color: hsl(var(--neutral-900));
+  }
+
+  .text-neutral-50 {
+    color: hsl(var(--neutral-50));
+  }
+  .text-neutral-100 {
+    color: hsl(var(--neutral-100));
+  }
+  .text-neutral-200 {
+    color: hsl(var(--neutral-200));
+  }
+  .text-neutral-300 {
+    color: hsl(var(--neutral-300));
+  }
+  .text-neutral-400 {
+    color: hsl(var(--neutral-400));
+  }
+  .text-neutral-500 {
+    color: hsl(var(--neutral-500));
+  }
+  .text-neutral-600 {
+    color: hsl(var(--neutral-600));
+  }
+  .text-neutral-700 {
+    color: hsl(var(--neutral-700));
+  }
+  .text-neutral-800 {
+    color: hsl(var(--neutral-800));
+  }
+  .text-neutral-900 {
+    color: hsl(var(--neutral-900));
+  }
+
+  .border-neutral-50 {
+    border-color: hsl(var(--neutral-50));
+  }
+  .border-neutral-100 {
+    border-color: hsl(var(--neutral-100));
+  }
+  .border-neutral-200 {
+    border-color: hsl(var(--neutral-200));
+  }
+  .border-neutral-300 {
+    border-color: hsl(var(--neutral-300));
+  }
+  .border-neutral-400 {
+    border-color: hsl(var(--neutral-400));
+  }
+  .border-neutral-500 {
+    border-color: hsl(var(--neutral-500));
+  }
+  .border-neutral-600 {
+    border-color: hsl(var(--neutral-600));
+  }
+  .border-neutral-700 {
+    border-color: hsl(var(--neutral-700));
+  }
+  .border-neutral-800 {
+    border-color: hsl(var(--neutral-800));
+  }
+  .border-neutral-900 {
+    border-color: hsl(var(--neutral-900));
+  }
+
+  /* Hover variants */
+  .hover\:bg-neutral-100:hover {
+    background-color: hsl(var(--neutral-100));
+  }
+  .hover\:bg-neutral-200:hover {
+    background-color: hsl(var(--neutral-200));
+  }
+  .hover\:text-neutral-800:hover {
+    color: hsl(var(--neutral-800));
+  }
+  .hover\:border-primary:hover {
+    border-color: hsl(var(--primary));
+  }
+  .hover\:text-primary:hover {
+    color: hsl(var(--primary));
+  }
+}
+/* Canvas specific styles */
+.canvas-container {
+  background: repeating-conic-gradient(#f8f9fa 0% 25%, transparent 0% 50%) 50% /
+    20px 20px;
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
