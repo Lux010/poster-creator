@@ -9,6 +9,7 @@ import PosterCreator from "./pages/poster-creator";
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={PosterCreator} />
       <Route path="/creator" component={PosterCreator} />
       <Route path="/editor" component={PosterEditor} />
       <Route path="/editor/:projectId" component={PosterEditor} />
