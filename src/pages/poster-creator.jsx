@@ -22,7 +22,9 @@ const PosterCreator = () => {
   const [selectedElement, setSelectedElement] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ width: 600, height: 800 });
   const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-  const [activeTab, setActiveTab] = useState("create");
+  const [leftTab, setLeftTab] = useState("create");
+  const [rightTab, setRightTab] = useState("properties");
+  const [draggedElement, setDraggedElement] = useState(null);
   const [isResizing, setIsResizing] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
@@ -146,6 +148,28 @@ const PosterCreator = () => {
     updateElement(id, { zIndex: newZIndex });
   };
 
+  // Reorder elements via drag and drop
+  const reorderElements = (draggedId, targetId) => {
+    const sortedElements = [...elements].sort((a, b) => b.zIndex - a.zIndex);
+    const draggedIndex = sortedElements.findIndex((el) => el.id === draggedId);
+    const targetIndex = sortedElements.findIndex((el) => el.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Reorder the array
+    const reordered = [...sortedElements];
+    const [removed] = reordered.splice(draggedIndex, 1);
+    reordered.splice(targetIndex, 0, removed);
+
+    // Update zIndex based on new order (higher index = higher zIndex)
+    const updated = reordered.map((el, index) => ({
+      ...el,
+      zIndex: reordered.length - index - 1,
+    }));
+
+    setElements(updated);
+  };
+
   // Download poster as image
   const downloadPoster = useCallback(async () => {
     try {
@@ -265,18 +289,18 @@ const PosterCreator = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex">
-      {/* Sidebar */}
+      {/* Left Panel - Create & Template */}
       <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
           Poster Creator
         </h1>
 
-        {/* Tabs */}
+        {/* Left Panel Tabs */}
         <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
           <button
-            onClick={() => setActiveTab("create")}
+            onClick={() => setLeftTab("create")}
             className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
-              activeTab === "create"
+              leftTab === "create"
                 ? "bg-white text-blue-600 shadow"
                 : "text-gray-600 hover:text-gray-800"
             }`}
@@ -284,28 +308,18 @@ const PosterCreator = () => {
             Create
           </button>
           <button
-            onClick={() => setActiveTab("template")}
+            onClick={() => setLeftTab("template")}
             className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
-              activeTab === "template"
+              leftTab === "template"
                 ? "bg-white text-blue-600 shadow"
                 : "text-gray-600 hover:text-gray-800"
             }`}
           >
             Template
           </button>
-          <button
-            onClick={() => setActiveTab("elements")}
-            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
-              activeTab === "elements"
-                ? "bg-white text-blue-600 shadow"
-                : "text-gray-600 hover:text-gray-800"
-            }`}
-          >
-            Elements
-          </button>
         </div>
 
-        {activeTab === "template" ? (
+        {leftTab === "template" ? (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -319,292 +333,63 @@ const PosterCreator = () => {
               />
             </div>
           </div>
-        ) : activeTab === "elements" ? (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-800">
-                All Elements
-              </h3>
-              <span className="text-sm text-gray-500">
-                {elements.length} items
-              </span>
-            </div>
-
-            {elements.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="mb-2">No elements added yet</div>
-                <div className="text-sm">
-                  Switch to Create tab to add elements
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {elements
-                  .sort((a, b) => b.zIndex - a.zIndex)
-                  .map((element, index) => (
-                    <div
-                      key={element.id}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        selectedElement === element.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedElement(element.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-shrink-0">
-                            {element.type === "text" && (
-                              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Type size={16} className="text-blue-600" />
-                              </div>
-                            )}
-                            {element.type === "image" && (
-                              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                <Image size={16} className="text-green-600" />
-                              </div>
-                            )}
-                            {element.type === "shape" && (
-                              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                {element.shapeType === "rectangle" ? (
-                                  <Square
-                                    size={16}
-                                    className="text-purple-600"
-                                  />
-                                ) : (
-                                  <Circle
-                                    size={16}
-                                    className="text-purple-600"
-                                  />
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="font-medium text-sm text-gray-900 truncate">
-                              {element.type === "text"
-                                ? element.content.substring(0, 20) +
-                                  (element.content.length > 20 ? "..." : "")
-                                : element.type === "image"
-                                ? "Image Element"
-                                : `${element.shapeType} Shape`}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Layer{" "}
-                              {elements.length -
-                                Math.max(...elements.map((el) => el.zIndex)) +
-                                element.zIndex}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              moveElement(element.id, "front");
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                            title="Bring Forward"
-                          >
-                            <Move size={14} />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteElement(element.id);
-                            }}
-                            className="p-1 text-gray-400 hover:text-red-600 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {selectedElement === element.id && (
-                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-3">
-                          {element.type === "text" && (
-                            <>
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">
-                                  Text Content
-                                </label>
-                                <textarea
-                                  value={element.content}
-                                  onChange={(e) =>
-                                    updateElement(element.id, {
-                                      content: e.target.value,
-                                    })
-                                  }
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  rows="2"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <label className="block text-xs text-gray-600">
-                                    Font Size
-                                  </label>
-                                  <input
-                                    type="number"
-                                    value={element.fontSize}
-                                    onChange={(e) =>
-                                      updateElement(element.id, {
-                                        fontSize: parseInt(e.target.value),
-                                      })
-                                    }
-                                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-600">
-                                    Color
-                                  </label>
-                                  <input
-                                    type="color"
-                                    value={element.color}
-                                    onChange={(e) =>
-                                      updateElement(element.id, {
-                                        color: e.target.value,
-                                      })
-                                    }
-                                    className="w-full h-6 border border-gray-300 rounded cursor-pointer"
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </div>
-                              </div>
-                            </>
-                          )}
-
-                          {element.type === "shape" && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs text-gray-600">
-                                  Fill
-                                </label>
-                                <input
-                                  type="color"
-                                  value={element.fill}
-                                  onChange={(e) =>
-                                    updateElement(element.id, {
-                                      fill: e.target.value,
-                                    })
-                                  }
-                                  className="w-full h-6 border border-gray-300 rounded cursor-pointer"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-600">
-                                  Stroke
-                                </label>
-                                <input
-                                  type="color"
-                                  value={element.stroke}
-                                  onChange={(e) =>
-                                    updateElement(element.id, {
-                                      stroke: e.target.value,
-                                    })
-                                  }
-                                  className="w-full h-6 border border-gray-300 rounded cursor-pointer"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {(element.type === "image" ||
-                            element.type === "shape") && (
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs text-gray-600">
-                                  Width
-                                </label>
-                                <input
-                                  type="number"
-                                  value={element.width}
-                                  onChange={(e) =>
-                                    updateElement(element.id, {
-                                      width: parseInt(e.target.value),
-                                    })
-                                  }
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-600">
-                                  Height
-                                </label>
-                                <input
-                                  type="number"
-                                  value={element.height}
-                                  onChange={(e) =>
-                                    updateElement(element.id, {
-                                      height: parseInt(e.target.value),
-                                    })
-                                  }
-                                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-xs text-gray-600">
-                                X Position
-                              </label>
-                              <input
-                                type="number"
-                                value={element.x}
-                                onChange={(e) =>
-                                  updateElement(element.id, {
-                                    x: parseInt(e.target.value),
-                                  })
-                                }
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-xs text-gray-600">
-                                Y Position
-                              </label>
-                              <input
-                                type="number"
-                                value={element.y}
-                                onChange={(e) =>
-                                  updateElement(element.id, {
-                                    y: parseInt(e.target.value),
-                                  })
-                                }
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
         ) : (
           <div className="space-y-6">
+            {/* Add Elements */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Add Elements
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={addTextElement}
+                  className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
+                >
+                  <Type size={16} />
+                  Text
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100"
+                >
+                  <Image size={16} />
+                  Image
+                </button>
+                <button
+                  onClick={() => addShape("rectangle")}
+                  className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100"
+                >
+                  <Square size={16} />
+                  Rectangle
+                </button>
+                <button
+                  onClick={() => addShape("circle")}
+                  className="flex items-center gap-2 px-3 py-2 bg-pink-50 text-pink-700 rounded hover:bg-pink-100"
+                >
+                  <Circle size={16} />
+                  Circle
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+
             {/* Canvas Settings */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Canvas
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Canvas Settings
               </h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-sm text-gray-600">Width</label>
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Width
+                    </label>
                     <input
                       type="number"
                       value={canvasSize.width}
@@ -618,7 +403,7 @@ const PosterCreator = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-gray-600">
+                    <label className="block text-xs text-gray-600 mb-1">
                       Height
                     </label>
                     <input
@@ -684,240 +469,18 @@ const PosterCreator = () => {
               </div>
             </div>
 
-            {/* Add Elements */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Add Elements
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={addTextElement}
-                  className="flex items-center justify-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <Type size={20} />
-                  <span className="text-sm">Text</span>
-                </button>
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex items-center justify-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
-                >
-                  <Image size={20} />
-                  <span className="text-sm">Image</span>
-                </button>
-                <button
-                  onClick={() => addShape("rectangle")}
-                  className="flex items-center justify-center gap-2 p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
-                >
-                  <Square size={20} />
-                  <span className="text-sm">Rectangle</span>
-                </button>
-                <button
-                  onClick={() => addShape("circle")}
-                  className="flex items-center justify-center gap-2 p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
-                >
-                  <Circle size={20} />
-                  <span className="text-sm">Circle</span>
-                </button>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+            {/* Download */}
+            <div className="pt-6 border-t">
+              <Button
+                onClick={() => setExportModalOpen(true)}
+                className="w-full flex items-center justify-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download Poster
+              </Button>
             </div>
-
-            {/* Element Properties */}
-            {selectedEl && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Properties
-                </h3>
-                <div className="space-y-3">
-                  {selectedEl.type === "text" && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Text Content
-                        </label>
-                        <textarea
-                          value={selectedEl.content}
-                          onChange={(e) =>
-                            updateElement(selectedEl.id, {
-                              content: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                          rows="2"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-sm text-gray-600">
-                            Font Size
-                          </label>
-                          <input
-                            type="number"
-                            value={selectedEl.fontSize}
-                            onChange={(e) =>
-                              updateElement(selectedEl.id, {
-                                fontSize: parseInt(e.target.value),
-                              })
-                            }
-                            className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-600">
-                            Color
-                          </label>
-                          <input
-                            type="color"
-                            value={selectedEl.color}
-                            onChange={(e) =>
-                              updateElement(selectedEl.id, {
-                                color: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-600 mb-1">
-                          Font Family
-                        </label>
-                        <select
-                          value={selectedEl.fontFamily}
-                          onChange={(e) =>
-                            updateElement(selectedEl.id, {
-                              fontFamily: e.target.value,
-                            })
-                          }
-                          className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          <option value="Arial">Arial</option>
-                          <option value="Helvetica">Helvetica</option>
-                          <option value="Times New Roman">
-                            Times New Roman
-                          </option>
-                          <option value="Georgia">Georgia</option>
-                          <option value="Verdana">Verdana</option>
-                        </select>
-                      </div>
-                    </>
-                  )}
-
-                  {selectedEl.type === "shape" && (
-                    <>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-sm text-gray-600">
-                            Fill Color
-                          </label>
-                          <input
-                            type="color"
-                            value={selectedEl.fill}
-                            onChange={(e) =>
-                              updateElement(selectedEl.id, {
-                                fill: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-gray-600">
-                            Stroke Color
-                          </label>
-                          <input
-                            type="color"
-                            value={selectedEl.stroke}
-                            onChange={(e) =>
-                              updateElement(selectedEl.id, {
-                                stroke: e.target.value,
-                              })
-                            }
-                            className="w-full h-8 border border-gray-300 rounded cursor-pointer"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Common properties */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-sm text-gray-600">
-                        X Position
-                      </label>
-                      <input
-                        type="number"
-                        value={selectedEl.x}
-                        onChange={(e) =>
-                          updateElement(selectedEl.id, {
-                            x: parseInt(e.target.value),
-                          })
-                        }
-                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600">
-                        Y Position
-                      </label>
-                      <input
-                        type="number"
-                        value={selectedEl.y}
-                        onChange={(e) =>
-                          updateElement(selectedEl.id, {
-                            y: parseInt(e.target.value),
-                          })
-                        }
-                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => moveElement(selectedEl.id, "front")}
-                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-                    >
-                      Bring Forward
-                    </button>
-                    <button
-                      onClick={() => moveElement(selectedEl.id, "back")}
-                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
-                    >
-                      Send Back
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => deleteElement(selectedEl.id)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100"
-                  >
-                    <Trash2 size={16} />
-                    Delete Element
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         )}
-
-        {/* Download */}
-        <div className="mt-6 pt-6 border-t">
-          <Button
-            onClick={() => setExportModalOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Download Poster
-          </Button>
-        </div>
       </div>
 
       {/* Canvas Area */}
@@ -925,7 +488,6 @@ const PosterCreator = () => {
         <div
           className="relative"
           onClick={(e) => {
-            // Only unselect if clicking on the container itself, not elements
             if (e.target === e.currentTarget) {
               setSelectedElement(null);
             }
@@ -1040,10 +602,9 @@ const PosterCreator = () => {
                     />
                   )}
 
-                  {/* Resize handles - only show for selected element */}
+                  {/* Resize handles */}
                   {selectedElement === element.id && (
                     <>
-                      {/* Corner resize handles */}
                       <div
                         className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nw-resize shadow-sm"
                         onMouseDown={(e) =>
@@ -1100,6 +661,393 @@ const PosterCreator = () => {
               ))}
           </div>
         </div>
+      </div>
+
+      {/* Right Panel - Properties & Elements */}
+      <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto">
+        {/* Right Panel Tabs */}
+        <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
+          <button
+            onClick={() => setRightTab("properties")}
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+              rightTab === "properties"
+                ? "bg-white text-blue-600 shadow"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            Properties
+          </button>
+          <button
+            onClick={() => setRightTab("elements")}
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-colors ${
+              rightTab === "elements"
+                ? "bg-white text-blue-600 shadow"
+                : "text-gray-600 hover:text-gray-800"
+            }`}
+          >
+            Elements
+          </button>
+        </div>
+
+        {rightTab === "elements" ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-800">
+                All Elements
+              </h3>
+              <span className="text-sm text-gray-500">
+                {elements.length} items
+              </span>
+            </div>
+
+            {elements.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="mb-2">No elements added yet</div>
+                <div className="text-sm">
+                  Switch to Create tab to add elements
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                {elements
+                  .sort((a, b) => b.zIndex - a.zIndex)
+                  .map((element, index) => (
+                    <div
+                      key={element.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggedElement(element.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (draggedElement && draggedElement !== element.id) {
+                          reorderElements(draggedElement, element.id);
+                        }
+                        setDraggedElement(null);
+                      }}
+                      onDragEnd={() => setDraggedElement(null)}
+                      className={`p-3 border rounded-lg cursor-move transition-all ${
+                        selectedElement === element.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      } ${draggedElement === element.id ? "opacity-50" : ""}`}
+                      onClick={() => setSelectedElement(element.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Move size={14} className="text-gray-400" />
+                          {element.type === "text" && <Type size={16} />}
+                          {element.type === "image" && <Image size={16} />}
+                          {element.type === "shape" && (
+                            <>
+                              {element.shapeType === "rectangle" && (
+                                <Square size={16} />
+                              )}
+                              {element.shapeType === "circle" && (
+                                <Circle size={16} />
+                              )}
+                            </>
+                          )}
+                          <span className="text-sm font-medium">
+                            {element.type === "text"
+                              ? element.content.substring(0, 20) +
+                                (element.content.length > 20 ? "..." : "")
+                              : element.type.charAt(0).toUpperCase() +
+                                element.type.slice(1)}
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteElement(element.id);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800">
+              Element Properties
+            </h3>
+
+            {!selectedEl ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="mb-2">No element selected</div>
+                <div className="text-sm">
+                  Click on an element to edit its properties
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Type-specific properties */}
+                {selectedEl.type === "text" && (
+                  <>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Text Content
+                      </label>
+                      <textarea
+                        value={selectedEl.content}
+                        onChange={(e) =>
+                          updateElement(selectedEl.id, {
+                            content: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                        rows="3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Font Size
+                        </label>
+                        <input
+                          type="number"
+                          value={selectedEl.fontSize}
+                          onChange={(e) =>
+                            updateElement(selectedEl.id, {
+                              fontSize: parseInt(e.target.value),
+                            })
+                          }
+                          className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedEl.color}
+                          onChange={(e) =>
+                            updateElement(selectedEl.id, {
+                              color: e.target.value,
+                            })
+                          }
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Font Family
+                      </label>
+                      <select
+                        value={selectedEl.fontFamily}
+                        onChange={(e) =>
+                          updateElement(selectedEl.id, {
+                            fontFamily: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                      >
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Verdana">Verdana</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Font Weight
+                      </label>
+                      <select
+                        value={selectedEl.fontWeight}
+                        onChange={(e) =>
+                          updateElement(selectedEl.id, {
+                            fontWeight: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                      >
+                        <option value="100">Thin (100)</option>
+                        <option value="200">Extra Light (200)</option>
+                        <option value="300">Light (300)</option>
+                        <option value="normal">Normal (400)</option>
+                        <option value="500">Medium (500)</option>
+                        <option value="600">Semi Bold (600)</option>
+                        <option value="bold">Bold (700)</option>
+                        <option value="800">Extra Bold (800)</option>
+                        <option value="900">Black (900)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {selectedEl.type === "shape" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm text-gray-600">
+                          Fill Color
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedEl.fill}
+                          onChange={(e) =>
+                            updateElement(selectedEl.id, {
+                              fill: e.target.value,
+                            })
+                          }
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-600">
+                          Stroke Color
+                        </label>
+                        <input
+                          type="color"
+                          value={selectedEl.stroke}
+                          onChange={(e) =>
+                            updateElement(selectedEl.id, {
+                              stroke: e.target.value,
+                            })
+                          }
+                          className="w-full h-8 border border-gray-300 rounded cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Common properties */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm text-gray-600">
+                      X Position
+                    </label>
+                    <input
+                      type="number"
+                      value={selectedEl.x}
+                      onChange={(e) =>
+                        updateElement(selectedEl.id, {
+                          x: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">
+                      Y Position
+                    </label>
+                    <input
+                      type="number"
+                      value={selectedEl.y}
+                      onChange={(e) =>
+                        updateElement(selectedEl.id, {
+                          y: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                    />
+                  </div>
+                </div>
+
+                {(selectedEl.type === "image" ||
+                  selectedEl.type === "shape") && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-sm text-gray-600">
+                        Width
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedEl.width}
+                        onChange={(e) =>
+                          updateElement(selectedEl.id, {
+                            width: parseInt(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600">
+                        Height
+                      </label>
+                      <input
+                        type="number"
+                        value={selectedEl.height}
+                        onChange={(e) =>
+                          updateElement(selectedEl.id, {
+                            height: parseInt(e.target.value),
+                          })
+                        }
+                        className="w-full px-3 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1">
+                    Rotation
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="360"
+                    value={selectedEl.rotation || 0}
+                    onChange={(e) =>
+                      updateElement(selectedEl.id, {
+                        rotation: parseInt(e.target.value),
+                      })
+                    }
+                    className="w-full"
+                  />
+                  <div className="text-center text-sm text-gray-500 mt-1">
+                    {selectedEl.rotation || 0}°
+                  </div>
+                </div>
+
+                {/* Layer controls */}
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">
+                    Layer Order
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => moveElement(selectedEl.id, "front")}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                    >
+                      Bring Forward
+                    </button>
+                    <button
+                      onClick={() => moveElement(selectedEl.id, "back")}
+                      className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm hover:bg-gray-200"
+                    >
+                      Send Back
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => deleteElement(selectedEl.id)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-50 text-red-700 rounded hover:bg-red-100"
+                >
+                  <Trash2 size={16} />
+                  Delete Element
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Export Modal */}
