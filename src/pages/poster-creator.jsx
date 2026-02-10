@@ -28,6 +28,7 @@ const PosterCreator = () => {
   const [isResizing, setIsResizing] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
   const [gridSize, setGridSize] = useState(20);
+  const [posterName, setPosterName] = useState("");
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -1055,6 +1056,8 @@ const PosterCreator = () => {
         open={exportModalOpen}
         onOpenChange={setExportModalOpen}
         exportFunction={downloadPoster}
+        posterName={posterName}
+        setPosterName={setPosterName}
       />
     </div>
   );

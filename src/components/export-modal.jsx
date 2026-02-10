@@ -12,7 +12,13 @@ import {
 import { Download } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 
-export default function ExportModal({ open, onOpenChange, exportFunction }) {
+export default function ExportModal({
+  open,
+  onOpenChange,
+  exportFunction,
+  posterName,
+  setPosterName,
+}) {
   const { toast } = useToast();
   const [format, setFormat] = useState("png");
   const [quality, setQuality] = useState("high");
@@ -29,9 +35,17 @@ export default function ExportModal({ open, onOpenChange, exportFunction }) {
         throw new Error("No data URL generated");
       }
 
+      if (!posterName.trim()) {
+        alert("Please enter a poster name");
+        return;
+      }
+
+      // Example usage
+      console.log("Exporting poster:", posterName);
+
       // Create download link
       const link = document.createElement("a");
-      link.download = `poster.${format}`;
+      link.download = `${posterName}.${format}`;
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
@@ -63,6 +77,16 @@ export default function ExportModal({ open, onOpenChange, exportFunction }) {
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Poster name input */}
+          <label className="block text-sm font-medium mb-1">Poster name</label>
+          <input
+            type="text"
+            value={posterName}
+            onChange={(e) => setPosterName(e.target.value)}
+            placeholder="e.g. Weekend Special"
+            className="w-full border rounded-md px-3 py-2 mb-4"
+          />
+
           <div>
             <Label className="text-sm font-medium text-neutral-700 mb-2 block">
               Format
