@@ -36,7 +36,10 @@ export default function ExportModal({
       }
 
       if (!posterName.trim()) {
-        alert("Please enter a poster name");
+        toast({
+          title: "Name required",
+          description: "Please enter a poster name",
+        });
         return;
       }
 
