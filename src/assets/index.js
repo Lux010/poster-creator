@@ -9,12 +9,23 @@ import logo_1 from "./logo_1.png";
 import logo_2 from "./logo_2.png";
 import price_badge_1 from "./price_badge.svg";
 import russian_bear_logo from "./Russian_Bear_Logo.png";
+import martell_logo from "./Martell_Logo.png";
+import jameson_logo from "./Jameson_Logo.png";
 import savanna_tray from "./Savanna_Tray.png";
+import martell from "./Martell_750ml.png";
+import hennessy_cognac from "./Hennessy_Cognac_750ml.png";
+import courvoisier from "./750ml_Courvoisier.png";
+import ballantines from "./750ml_Ballantines.png";
+import appletiser from "./Appletiser.png";
+import ballantines_logo from "./Ballantines_Logo.png";
 
 export const predefinedImages = {
   "Brand Logo": [
     { id: "bl1", alt: "Russian Bear Vodka Logo", src: russian_bear_logo },
     { id: "bl2", alt: "Hennessy Logo", src: hennessy_logo },
+    { id: "bl3", alt: "Martell Logo", src: martell_logo },
+    { id: "bl4", alt: "Jameson Logo", src: jameson_logo },
+    { id: "bl5", alt: "Ballantines Logo", src: ballantines_logo },
   ],
   "Company Logo": [
     { id: "cl1", alt: "No BG Logo", src: logo_1 },
@@ -28,6 +39,11 @@ export const predefinedImages = {
     { id: "p5", alt: "Heineken Case", src: heineken_case },
     { id: "p6", alt: "Hennessy VSOP", src: hennessy_vsop },
     { id: "p7", alt: "Savanna Tray", src: savanna_tray },
+    { id: "p8", alt: "Martell 750ml", src: martell },
+    { id: "p9", alt: "Hennessy Cognac", src: hennessy_cognac },
+    { id: "p10", alt: "Courvoisier", src: courvoisier },
+    { id: "p11", alt: "Ballantines", src: ballantines },
+    { id: "p12", alt: "Appletiser", src: appletiser },
   ],
   "Price Badge": [{ id: "pb1", alt: "50% Off Badge", src: price_badge_1 }],
 };
