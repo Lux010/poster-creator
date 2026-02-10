@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from "react";
+import predefinedImages from "../assets/index";
 import { toPng } from "html-to-image";
 import {
   Upload,
@@ -32,6 +33,10 @@ const PosterCreator = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  const [showImageSourcePicker, setShowImageSourcePicker] = useState(false);
+  const [showPredefinedPicker, setShowPredefinedPicker] = useState(false);
+  const [activeImageCategory, setActiveImageCategory] = useState("Products");
 
   // Add new text element
   const addTextElement = () => {
@@ -286,6 +291,10 @@ const PosterCreator = () => {
     document.addEventListener("mouseup", handleMouseUp);
   };
 
+  const openPredefinedImagesPicker = () => {
+    setShowPredefinedPicker(true);
+  };
+
   const selectedEl = elements.find((el) => el.id === selectedElement);
 
   return (
@@ -350,12 +359,143 @@ const PosterCreator = () => {
                   Text
                 </button>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  // onClick={() => fileInputRef.current?.click()}
+                  onClick={() => setShowImageSourcePicker(true)}
                   className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-700 rounded hover:bg-green-100"
                 >
                   <Image size={16} />
                   Image
                 </button>
+                {showImageSourcePicker && (
+                  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4">
+                      <h3 className="text-xl font-bold text-center mb-6">
+                        Add Image
+                      </h3>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {/* Option 1: Upload from computer */}
+                        <button
+                          onClick={() => {
+                            setShowImageSourcePicker(false);
+                            fileInputRef.current?.click();
+                          }}
+                          className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50/50 transition-colors group"
+                        >
+                          <div className="p-4 bg-green-100 rounded-full group-hover:bg-green-200 transition-colors">
+                            <Upload size={32} className="text-green-600" />
+                          </div>
+                          <div className="text-center">
+                            <p className="font-medium text-gray-800">
+                              Upload from computer
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              PNG, JPG, up to 10MB
+                            </p>
+                          </div>
+                        </button>
+
+                        {/* Option 2: Choose from predefined images */}
+                        <button
+                          onClick={() => {
+                            setShowImageSourcePicker(false);
+                            openPredefinedImagesPicker();
+                          }}
+                          className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50/50 transition-colors group"
+                        >
+                          <div className="p-4 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors">
+                            <Image size={32} className="text-blue-600" />
+                          </div>
+                          <div className="text-center">
+                            <p className="font-medium text-gray-800">
+                              Choose from library
+                            </p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              Predefined images & templates
+                            </p>
+                          </div>
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => setShowImageSourcePicker(false)}
+                        className="mt-8 w-full py-3 text-gray-600 hover:text-gray-900 font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {showPredefinedPicker && (
+                  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto mx-4">
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-bold">
+                          Choose Image from Library
+                        </h3>
+                        <button
+                          onClick={() => setShowPredefinedPicker(false)}
+                          className="text-gray-500 hover:text-gray-800 text-2xl leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+
+                      {/* Category Tabs */}
+                      <div className="flex flex-wrap gap-2 mb-6 border-b pb-2">
+                        {Object.keys(predefinedImages).map((category) => (
+                          <button
+                            key={category}
+                            onClick={() => setActiveImageCategory(category)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                              activeImageCategory === category
+                                ? "bg-blue-600 text-white shadow"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {category}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Images Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {(predefinedImages[activeImageCategory] || []).map(
+                          (image) => (
+                            <div
+                              key={image.id}
+                              className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 cursor-pointer transition-all hover:shadow-md bg-gray-50"
+                              onClick={() => {
+                                addImageElement(image.src);
+                                setShowPredefinedPicker(false);
+                                // Optional: reset to default category next time
+                                // setActiveImageCategory("Products");
+                              }}
+                            >
+                              <img
+                                src={image.src}
+                                alt={image.alt}
+                                className="w-full h-full object-contain p-2" // contain instead of cover → better for logos/badges
+                                loading="lazy"
+                              />
+                              {/* Optional: show name on hover */}
+                              <div className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-xs p-1.5 opacity-0 hover:opacity-100 transition-opacity text-center">
+                                {image.alt}
+                              </div>
+                            </div>
+                          )
+                        )}
+
+                        {predefinedImages[activeImageCategory]?.length ===
+                          0 && (
+                          <div className="col-span-full py-12 text-center text-gray-500">
+                            No images in this category yet.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <button
                   onClick={() => addShape("rectangle")}
                   className="flex items-center gap-2 px-3 py-2 bg-purple-50 text-purple-700 rounded hover:bg-purple-100"
