@@ -442,9 +442,9 @@ const PosterCreator = () => {
   const selectedEl = elements.find((el) => el.id === selectedElement);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="h-screen bg-gray-100 flex overflow-hidden">
       {/* Left Panel - Create & Template */}
-      <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto">
+      <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto h-screen flex-shrink-0">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">
           Poster Creator
         </h1>
@@ -518,7 +518,7 @@ const PosterCreator = () => {
                       </h3>
 
                       {/* Remove Background Toggle */}
-                      <div className="flex items-center justify-between mb-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center justify-between mb-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <div>
                           <p className="text-sm font-medium text-gray-800">
                             Remove Background
@@ -549,7 +549,7 @@ const PosterCreator = () => {
                             💡
                           </span>
                           <span>
-                            For best results, photograph your product against a{" "}
+                            For best results, photograph your subject against a{" "}
                             <strong>plain, solid-colored background</strong> —
                             white, grey, or any distinct single color works
                             best.
@@ -710,6 +710,34 @@ const PosterCreator = () => {
                 Canvas Settings
               </h3>
               <div className="space-y-3">
+                {/* Preset sizes */}
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">
+                    Preset Sizes
+                  </label>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { label: "A1", w: 1684, h: 2384 },
+                      { label: "A2", w: 1191, h: 1684 },
+                      { label: "A3", w: 842, h: 1191 },
+                    ].map(({ label, w, h }) => (
+                      <button
+                        key={label}
+                        onClick={() => setCanvasSize({ width: w, height: h })}
+                        className={`flex flex-col items-center py-2 px-1 rounded border text-xs font-medium transition-colors ${
+                          canvasSize.width === w && canvasSize.height === h
+                            ? "bg-blue-100 border-blue-400 text-blue-700"
+                            : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+                        }`}
+                      >
+                        <span className="font-semibold">{label}</span>
+                        <span className="text-gray-400 mt-0.5">
+                          {w}×{h}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-xs text-gray-600 mb-1">
@@ -809,7 +837,7 @@ const PosterCreator = () => {
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 p-8 flex items-center justify-center">
+      <div className="flex-1 p-8 flex items-start justify-center overflow-auto h-screen">
         <div
           className="relative"
           onClick={(e) => {
@@ -989,7 +1017,7 @@ const PosterCreator = () => {
       </div>
 
       {/* Right Panel - Properties & Elements */}
-      <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto">
+      <div className="w-80 bg-white shadow-lg p-6 overflow-y-auto h-screen flex-shrink-0">
         {/* Right Panel Tabs */}
         <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
           <button
@@ -1386,7 +1414,7 @@ const PosterCreator = () => {
               Removing Background
             </h3>
             <p className="text-sm text-gray-500">
-              Application is analyzing your image…
+              Claude is analyzing your image…
             </p>
           </div>
         </div>
