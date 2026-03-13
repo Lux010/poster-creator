@@ -33,6 +33,17 @@ const PosterCreator = () => {
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
+  const [zoom, setZoom] = useState(1);
+
+  const zoomIn = () =>
+    setZoom((z) => Math.min(3, parseFloat((z + 0.1).toFixed(1))));
+  const zoomOut = () =>
+    setZoom((z) => Math.max(0.1, parseFloat((z - 0.1).toFixed(1))));
+  const zoomFit = () => {
+    // fit canvas width inside center panel (approx window - 640px for both sidebars)
+    const available = window.innerWidth - 640 - 64; // minus panels and padding
+    setZoom(parseFloat(Math.min(1, available / canvasSize.width).toFixed(2)));
+  };
 
   const [showImageSourcePicker, setShowImageSourcePicker] = useState(false);
   const [showPredefinedPicker, setShowPredefinedPicker] = useState(false);
@@ -837,181 +848,222 @@ const PosterCreator = () => {
       </div>
 
       {/* Canvas Area */}
-      <div className="flex-1 p-8 flex items-start justify-center overflow-auto h-screen">
-        <div
-          className="relative"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setSelectedElement(null);
-            }
-          }}
-        >
-          <div
-            ref={canvasRef}
-            className="relative shadow-2xl border border-gray-300"
-            style={{
-              width: canvasSize.width,
-              height: canvasSize.height,
-              backgroundColor,
-              backgroundImage: showGrid
-                ? `linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)`
-                : "none",
-              backgroundSize: showGrid ? `${gridSize}px ${gridSize}px` : "auto",
-            }}
-            onClick={() => setSelectedElement(null)}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Zoom toolbar */}
+        <div className="flex items-center justify-center gap-2 py-2 bg-white border-b border-gray-200 flex-shrink-0">
+          <button
+            onClick={zoomOut}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 font-bold text-lg leading-none"
           >
-            {elements
-              .sort((a, b) => a.zIndex - b.zIndex)
-              .map((element) => (
-                <div
-                  key={element.id}
-                  className={`absolute cursor-move ${
-                    selectedElement === element.id ? "ring-2 ring-blue-500" : ""
-                  }`}
-                  style={{
-                    left: element.x,
-                    top: element.y,
-                    transform: `rotate(${element.rotation || 0}deg)`,
-                    zIndex: element.zIndex,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedElement(element.id);
-                  }}
-                  onMouseDown={(e) => {
-                    if (isResizing) return;
+            −
+          </button>
+          <button
+            onClick={() => setZoom(1)}
+            className="min-w-[4rem] px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded text-center"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            onClick={zoomIn}
+            className="w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-600 font-bold text-lg leading-none"
+          >
+            +
+          </button>
+          <div className="w-px h-4 bg-gray-300 mx-1" />
+          <button
+            onClick={zoomFit}
+            className="px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded"
+          >
+            Fit
+          </button>
+        </div>
 
-                    const startX = e.clientX - element.x;
-                    const startY = e.clientY - element.y;
+        {/* Scrollable canvas viewport */}
+        <div className="flex-1 overflow-auto p-8 flex items-start justify-center">
+          <div
+            className="relative"
+            style={{
+              transform: `scale(${zoom})`,
+              transformOrigin: "top center",
+              marginBottom: `${(zoom - 1) * canvasSize.height}px`,
+            }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setSelectedElement(null);
+              }
+            }}
+          >
+            <div
+              ref={canvasRef}
+              className="relative shadow-2xl border border-gray-300"
+              style={{
+                width: canvasSize.width,
+                height: canvasSize.height,
+                backgroundColor,
+                backgroundImage: showGrid
+                  ? `linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)`
+                  : "none",
+                backgroundSize: showGrid
+                  ? `${gridSize}px ${gridSize}px`
+                  : "auto",
+              }}
+              onClick={() => setSelectedElement(null)}
+            >
+              {elements
+                .sort((a, b) => a.zIndex - b.zIndex)
+                .map((element) => (
+                  <div
+                    key={element.id}
+                    className={`absolute cursor-move ${
+                      selectedElement === element.id
+                        ? "ring-2 ring-blue-500"
+                        : ""
+                    }`}
+                    style={{
+                      left: element.x,
+                      top: element.y,
+                      transform: `rotate(${element.rotation || 0}deg)`,
+                      zIndex: element.zIndex,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedElement(element.id);
+                    }}
+                    onMouseDown={(e) => {
+                      if (isResizing) return;
 
-                    const handleMouseMove = (e) => {
-                      const newX = e.clientX - startX;
-                      const newY = e.clientY - startY;
-                      updateElement(element.id, { x: newX, y: newY });
-                    };
+                      const startX = e.clientX - element.x;
+                      const startY = e.clientY - element.y;
 
-                    const handleMouseUp = () => {
-                      document.removeEventListener(
-                        "mousemove",
-                        handleMouseMove
-                      );
-                      document.removeEventListener("mouseup", handleMouseUp);
-                    };
+                      const handleMouseMove = (e) => {
+                        const newX = e.clientX - startX;
+                        const newY = e.clientY - startY;
+                        updateElement(element.id, { x: newX, y: newY });
+                      };
 
-                    document.addEventListener("mousemove", handleMouseMove);
-                    document.addEventListener("mouseup", handleMouseUp);
-                  }}
-                >
-                  {element.type === "text" && (
-                    <div
-                      style={{
-                        fontSize: element.fontSize,
-                        fontFamily: element.fontFamily,
-                        color: element.color,
-                        fontWeight: element.fontWeight,
-                        textAlign: element.textAlign,
-                        whiteSpace: "pre-wrap",
-                        minWidth: "20px",
-                        minHeight: `${element.fontSize}px`,
-                      }}
-                      onDoubleClick={(e) => {
-                        e.stopPropagation();
-                        const newContent = prompt(
-                          "Edit text:",
-                          element.content
+                      const handleMouseUp = () => {
+                        document.removeEventListener(
+                          "mousemove",
+                          handleMouseMove
                         );
-                        if (newContent !== null) {
-                          handleTextEdit(element.id, newContent);
-                        }
-                      }}
-                    >
-                      {element.content}
-                    </div>
-                  )}
+                        document.removeEventListener("mouseup", handleMouseUp);
+                      };
 
-                  {element.type === "image" && (
-                    <img
-                      src={element.src}
-                      alt="Poster element"
-                      style={{
-                        width: element.width,
-                        height: element.height,
-                        objectFit: "cover",
-                      }}
-                      draggable={false}
-                    />
-                  )}
+                      document.addEventListener("mousemove", handleMouseMove);
+                      document.addEventListener("mouseup", handleMouseUp);
+                    }}
+                  >
+                    {element.type === "text" && (
+                      <div
+                        style={{
+                          fontSize: element.fontSize,
+                          fontFamily: element.fontFamily,
+                          color: element.color,
+                          fontWeight: element.fontWeight,
+                          textAlign: element.textAlign,
+                          whiteSpace: "pre-wrap",
+                          minWidth: "20px",
+                          minHeight: `${element.fontSize}px`,
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          const newContent = prompt(
+                            "Edit text:",
+                            element.content
+                          );
+                          if (newContent !== null) {
+                            handleTextEdit(element.id, newContent);
+                          }
+                        }}
+                      >
+                        {element.content}
+                      </div>
+                    )}
 
-                  {element.type === "shape" && (
-                    <div
-                      style={{
-                        width: element.width,
-                        height: element.height,
-                        backgroundColor: element.fill,
-                        border: `${element.strokeWidth}px solid ${element.stroke}`,
-                        borderRadius:
-                          element.shapeType === "circle" ? "50%" : "0",
-                      }}
-                    />
-                  )}
+                    {element.type === "image" && (
+                      <img
+                        src={element.src}
+                        alt="Poster element"
+                        style={{
+                          width: element.width,
+                          height: element.height,
+                          objectFit: "cover",
+                        }}
+                        draggable={false}
+                      />
+                    )}
 
-                  {/* Resize handles */}
-                  {selectedElement === element.id && (
-                    <>
+                    {element.type === "shape" && (
                       <div
-                        className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nw-resize shadow-sm"
-                        onMouseDown={(e) =>
-                          handleResizeStart(e, element.id, "nw")
-                        }
-                      />
-                      <div
-                        className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-ne-resize shadow-sm"
                         style={{
-                          left:
-                            (element.width ||
-                              (element.type === "text" ? "auto" : 100)) ===
-                            "auto"
-                              ? "auto"
-                              : `${element.width || 100}px`,
+                          width: element.width,
+                          height: element.height,
+                          backgroundColor: element.fill,
+                          border: `${element.strokeWidth}px solid ${element.stroke}`,
+                          borderRadius:
+                            element.shapeType === "circle" ? "50%" : "0",
                         }}
-                        onMouseDown={(e) =>
-                          handleResizeStart(e, element.id, "ne")
-                        }
                       />
-                      <div
-                        className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-sw-resize shadow-sm"
-                        style={{
-                          top:
-                            element.type === "text"
-                              ? `${element.fontSize}px`
-                              : `${element.height || 100}px`,
-                        }}
-                        onMouseDown={(e) =>
-                          handleResizeStart(e, element.id, "sw")
-                        }
-                      />
-                      <div
-                        className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-se-resize shadow-sm"
-                        style={{
-                          left:
-                            (element.width ||
-                              (element.type === "text" ? "auto" : 100)) ===
-                            "auto"
-                              ? "auto"
-                              : `${element.width || 100}px`,
-                          top:
-                            element.type === "text"
-                              ? `${element.fontSize}px`
-                              : `${element.height || 100}px`,
-                        }}
-                        onMouseDown={(e) =>
-                          handleResizeStart(e, element.id, "se")
-                        }
-                      />
-                    </>
-                  )}
-                </div>
-              ))}
+                    )}
+
+                    {/* Resize handles */}
+                    {selectedElement === element.id && (
+                      <>
+                        <div
+                          className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-nw-resize shadow-sm"
+                          onMouseDown={(e) =>
+                            handleResizeStart(e, element.id, "nw")
+                          }
+                        />
+                        <div
+                          className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-ne-resize shadow-sm"
+                          style={{
+                            left:
+                              (element.width ||
+                                (element.type === "text" ? "auto" : 100)) ===
+                              "auto"
+                                ? "auto"
+                                : `${element.width || 100}px`,
+                          }}
+                          onMouseDown={(e) =>
+                            handleResizeStart(e, element.id, "ne")
+                          }
+                        />
+                        <div
+                          className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-sw-resize shadow-sm"
+                          style={{
+                            top:
+                              element.type === "text"
+                                ? `${element.fontSize}px`
+                                : `${element.height || 100}px`,
+                          }}
+                          onMouseDown={(e) =>
+                            handleResizeStart(e, element.id, "sw")
+                          }
+                        />
+                        <div
+                          className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 border border-white rounded-full cursor-se-resize shadow-sm"
+                          style={{
+                            left:
+                              (element.width ||
+                                (element.type === "text" ? "auto" : 100)) ===
+                              "auto"
+                                ? "auto"
+                                : `${element.width || 100}px`,
+                            top:
+                              element.type === "text"
+                                ? `${element.fontSize}px`
+                                : `${element.height || 100}px`,
+                          }}
+                          onMouseDown={(e) =>
+                            handleResizeStart(e, element.id, "se")
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
       </div>

@@ -18,6 +18,7 @@ import courvoisier from "./750ml_Courvoisier.png";
 import ballantines from "./750ml_Ballantines.png";
 import appletiser from "./Appletiser.png";
 import ballantines_logo from "./Ballantines_Logo.png";
+import courvoisier_logo from "./courvoisier_logo.png";
 
 export const predefinedImages = {
   "Brand Logo": [
@@ -26,6 +27,7 @@ export const predefinedImages = {
     { id: "bl3", alt: "Martell Logo", src: martell_logo },
     { id: "bl4", alt: "Jameson Logo", src: jameson_logo },
     { id: "bl5", alt: "Ballantines Logo", src: ballantines_logo },
+    { id: "bl6", alt: "Courvoisier Logo", src: courvoisier_logo },
   ],
   "Company Logo": [
     { id: "cl1", alt: "No BG Logo", src: logo_1 },
