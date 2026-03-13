@@ -37,6 +37,8 @@ const PosterCreator = () => {
   const [showImageSourcePicker, setShowImageSourcePicker] = useState(false);
   const [showPredefinedPicker, setShowPredefinedPicker] = useState(false);
   const [activeImageCategory, setActiveImageCategory] = useState("Products");
+  const [removeBackground, setRemoveBackground] = useState(false);
+  const [isProcessingBg, setIsProcessingBg] = useState(false);
 
   // Add new text element
   const addTextElement = () => {
@@ -98,16 +100,158 @@ const PosterCreator = () => {
     setSelectedElement(newElement.id);
   };
 
-  // Handle file upload for images
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        addImageElement(e.target.result);
-      };
-      reader.readAsDataURL(file);
+  // --- Background removal helpers ---
+
+  // Sample the 4 corners + edges to guess background color
+  const detectBgColor = (pixels, width, height) => {
+    const samples = [
+      [0, 0],
+      [width - 1, 0],
+      [0, height - 1],
+      [width - 1, height - 1],
+      [Math.floor(width / 2), 0],
+      [0, Math.floor(height / 2)],
+      [width - 1, Math.floor(height / 2)],
+      [Math.floor(width / 2), height - 1],
+    ];
+    let rSum = 0,
+      gSum = 0,
+      bSum = 0;
+    for (const [x, y] of samples) {
+      const i = (y * width + x) * 4;
+      rSum += pixels[i];
+      gSum += pixels[i + 1];
+      bSum += pixels[i + 2];
     }
+    return {
+      r: Math.round(rSum / samples.length),
+      g: Math.round(gSum / samples.length),
+      b: Math.round(bSum / samples.length),
+    };
+  };
+
+  // Flood-fill from all 4 edges, marking background pixels
+  const floodFillEdges = (pixels, width, height, bgColor, tolerance) => {
+    const visited = new Uint8Array(width * height);
+    const queue = [];
+
+    const colorDist = (i) => {
+      const r = pixels[i] - bgColor.r;
+      const g = pixels[i + 1] - bgColor.g;
+      const b = pixels[i + 2] - bgColor.b;
+      return Math.sqrt(r * r + g * g + b * b);
+    };
+
+    const enqueue = (x, y) => {
+      const idx = y * width + x;
+      if (visited[idx]) return;
+      visited[idx] = 1;
+      if (colorDist(idx * 4) <= tolerance) queue.push(idx);
+    };
+
+    // Seed from all 4 edges
+    for (let x = 0; x < width; x++) {
+      enqueue(x, 0);
+      enqueue(x, height - 1);
+    }
+    for (let y = 0; y < height; y++) {
+      enqueue(0, y);
+      enqueue(width - 1, y);
+    }
+
+    // BFS
+    while (queue.length > 0) {
+      const idx = queue.pop();
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      pixels[idx * 4 + 3] = 0; // make transparent
+
+      if (x > 0) enqueue(x - 1, y);
+      if (x < width - 1) enqueue(x + 1, y);
+      if (y > 0) enqueue(x, y - 1);
+      if (y < height - 1) enqueue(x, y + 1);
+    }
+  };
+
+  // Feather edges: semi-transparent pixels near transparent areas for smoother cutout
+  const featherEdges = (pixels, width, height, radius = 1) => {
+    const alphaMap = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) alphaMap[i] = pixels[i * 4 + 3];
+
+    for (let y = radius; y < height - radius; y++) {
+      for (let x = radius; x < width - radius; x++) {
+        const idx = y * width + x;
+        if (alphaMap[idx] === 0) continue;
+        // Check if any neighbour is transparent
+        let hasTransparentNeighbour = false;
+        for (let dy = -radius; dy <= radius && !hasTransparentNeighbour; dy++) {
+          for (
+            let dx = -radius;
+            dx <= radius && !hasTransparentNeighbour;
+            dx++
+          ) {
+            if (alphaMap[(y + dy) * width + (x + dx)] === 0)
+              hasTransparentNeighbour = true;
+          }
+        }
+        if (hasTransparentNeighbour) pixels[idx * 4 + 3] = 128;
+      }
+    }
+  };
+
+  // Main: remove background entirely in the browser using flood-fill
+  const removeImageBackground = (base64DataUrl) => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const pixels = imageData.data;
+        const { width, height } = canvas;
+
+        const bgColor = detectBgColor(pixels, width, height);
+        const tolerance = 40;
+
+        floodFillEdges(pixels, width, height, bgColor, tolerance);
+        featherEdges(pixels, width, height, 1);
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = reject;
+      img.src = base64DataUrl;
+    });
+  };
+
+  // Handle file upload for images
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      if (removeBackground) {
+        setIsProcessingBg(true);
+        try {
+          const processed = await removeImageBackground(dataUrl);
+          addImageElement(processed);
+        } catch (err) {
+          console.error("Background removal failed:", err);
+          addImageElement(dataUrl); // fallback to original
+        } finally {
+          setIsProcessingBg(false);
+        }
+      } else {
+        addImageElement(dataUrl);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Handle template upload
@@ -372,6 +516,46 @@ const PosterCreator = () => {
                       <h3 className="text-xl font-bold text-center mb-6">
                         Add Image
                       </h3>
+
+                      {/* Remove Background Toggle */}
+                      <div className="flex items-center justify-between mb-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            Remove Background
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Auto-remove bg when uploading
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setRemoveBackground((v) => !v)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                            removeBackground ? "bg-blue-600" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                              removeBackground
+                                ? "translate-x-6"
+                                : "translate-x-1"
+                            }`}
+                          />
+                        </button>
+                      </div>
+
+                      {removeBackground && (
+                        <div className="flex items-start gap-2 px-3 py-2 mb-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+                          <span className="text-base leading-none mt-0.5">
+                            💡
+                          </span>
+                          <span>
+                            For best results, photograph your product against a{" "}
+                            <strong>plain, solid-colored background</strong> —
+                            white, grey, or any distinct single color works
+                            best.
+                          </span>
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         {/* Option 1: Upload from computer */}
@@ -1190,6 +1374,23 @@ const PosterCreator = () => {
           </div>
         )}
       </div>
+
+      {/* Background Removal Processing Overlay */}
+      {isProcessingBg && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Removing Background
+            </h3>
+            <p className="text-sm text-gray-500">
+              Application is analyzing your image…
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Export Modal */}
       <ExportModal
